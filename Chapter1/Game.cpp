@@ -51,13 +51,15 @@ bool Game::Initialize()
 		return false;
 	}
 
-	mPaddlePos.x = 10.0f;
-	mPaddlePos.y = 700.0f / 2.0f;
-	mBallPos.x = 1200.0f / 2.0f;
-	mBallPos.y = 700.0f / 2.0f;
-	mBallVel.x = -200.0f;
-	mBallVel.y = 235.0f;
+	mPaddle1Pos.x = 10.0f;
+	mPaddle1Pos.y = 700.0f / 2.0f;
+	mPaddle2Pos.x = 1200.0f - 10.0f - thickness;
+	mPaddle2Pos.y = 700.0f / 2.0f;
 
+	sBall ball1{ Vector2{1200.0f / 2.0f, 700.0f / 2.0f}, Vector2{-200.0f, 235.0f} };
+	sBall ball2{ Vector2{1000.0f / 2.0f, 700.0f / 2.0f}, Vector2{-100.0f, 110.0f} };
+	Balls.push_back(ball1);
+	Balls.push_back(ball2);
 	return true;
 }
 
@@ -89,14 +91,24 @@ void Game::ProcessInput()
 		mIsRunning = false;
 	}
 
-	mPaddleDir = 0;
+	mPaddle1Dir = 0;
 	if (state[SDL_SCANCODE_W])
 	{
-		mPaddleDir -= 1;
+		mPaddle1Dir -= 1;
 	}
 	if (state[SDL_SCANCODE_S])
 	{
-		mPaddleDir += 1;
+		mPaddle1Dir += 1;
+	}
+
+	mPaddle2Dir = 0;
+	if (state[SDL_SCANCODE_I])
+	{
+		mPaddle2Dir -= 1;
+	}
+	if (state[SDL_SCANCODE_K])
+	{
+		mPaddle2Dir += 1;
 	}
 }
 
@@ -115,50 +127,71 @@ void Game::UpdateGame()
 
 	mTicksCount = SDL_GetTicks();
 
-	if (mPaddleDir != 0)
+	if (mPaddle1Dir != 0)
 	{
-		mPaddlePos.y += mPaddleDir * 300.0f * deltaTime;
-		if (mPaddlePos.y < (paddleH / 2.0f + thickness))
+		mPaddle1Pos.y += mPaddle1Dir * 300.0f * deltaTime;
+		if (mPaddle1Pos.y < (paddleH / 2.0f + thickness))
 		{
-			mPaddlePos.y = paddleH / 2.0f + thickness;
+			mPaddle1Pos.y = paddleH / 2.0f + thickness;
 		}
-		else if (mPaddlePos.y > (700.0f - paddleH / 2.0f - thickness))
+		else if (mPaddle1Pos.y > (700.0f - paddleH / 2.0f - thickness))
 		{
-			mPaddlePos.y = 700.0f - paddleH / 2.0f - thickness;
+			mPaddle1Pos.y = 700.0f - paddleH / 2.0f - thickness;
 		}
 	}
-	mBallPos.x += mBallVel.x * deltaTime;
-	mBallPos.y += mBallVel.y * deltaTime;
-
-
-	float diff = mPaddlePos.y - mBallPos.y;
-	diff = (diff > 0.0f) ? diff : -diff;
-	if (
-		diff <= paddleH / 2.0f &&
-		mBallPos.x <= 25.0f && mBallPos.x >= 20.0f &&
-		mBallVel.x < 0.0f)
+	if (mPaddle2Dir != 0)
 	{
-		mBallVel.x *= -1.0f;
+		mPaddle2Pos.y += mPaddle2Dir * 300.0f * deltaTime;
+		if (mPaddle2Pos.y < (paddleH / 2.0f + thickness))
+		{
+			mPaddle2Pos.y = paddleH / 2.0f + thickness;
+		}
+		else if (mPaddle2Pos.y > (700.0f - paddleH / 2.0f - thickness))
+		{
+			mPaddle2Pos.y = 700.0f - paddleH / 2.0f - thickness;
+		}
 	}
-	else if (mBallPos.x <= 0.0f)
-	{
-		mIsRunning = false;
-	}
-	else if (mBallPos.x >= (1200.0f - thickness) && mBallVel.x > 0.0f)
-	{
-		mBallVel.x *= -1.0f;
-	}
+	for (std::vector<sBall>::size_type i = 0; i < Balls.size(); i++) {
+		Balls[i].Pos.x += Balls[i].Vel.x * deltaTime;
+		Balls[i].Pos.y += Balls[i].Vel.y * deltaTime;
 
-	if (mBallPos.y <= thickness && mBallVel.y < 0.0f)
-	{
-		mBallVel.y *= -1;
-	}
-	else if (mBallPos.y >= (700 - thickness) && mBallVel.y > 0.0f)
-	{
-		mBallVel.y *= -1;
-	}
+		float p1diff = mPaddle1Pos.y - Balls[i].Pos.y;
+		float p2diff = mPaddle2Pos.y - Balls[i].Pos.y;
+		p1diff = (p1diff > 0.0f) ? p1diff : -p1diff;
+		p2diff = (p2diff > 0.0f) ? p2diff : -p2diff;
+		if (
+			p1diff <= paddleH / 2.0f &&
+			Balls[i].Pos.x <= 25.0f && Balls[i].Pos.x >= 20.0f &&
+			Balls[i].Vel.x < 0.0f)
+		{
+			Balls[i].Vel.x *= -1.0f;
+		}
+		else if (
+			p2diff <= paddleH / 2.0f &&
+			Balls[i].Pos.x >= 1200.0f - 25.0f && Balls[i].Pos.x <= 1200.0f - 20.0f &&
+			Balls[i].Vel.x > 0.0f
+			)
+		{
+			Balls[i].Vel.x *= -1.0f;
+		}
+		else if (Balls[i].Pos.x <= 0.0f)
+		{
+			mIsRunning = false;
+		}
+		else if (Balls[i].Pos.x >= 1200.0f)
+		{
+			mIsRunning = false;
+		}
+		if (Balls[i].Pos.y <= thickness && Balls[i].Vel.y < 0.0f)
+		{
+			Balls[i].Vel.y *= -1;
+		}
+		else if (Balls[i].Pos.y >= (700 - thickness) && Balls[i].Vel.y > 0.0f)
+		{
+			Balls[i].Vel.y *= -1;
+		}
 
-
+	}
 }
 
 void Game::GenerateOutput() 
@@ -184,30 +217,31 @@ void Game::GenerateOutput()
 	wall.y = 700 - thickness;
 	SDL_RenderFillRect(mRenderer, &wall);
 
-	wall.x = 1200 - thickness;
-	wall.y = 0;
-	wall.w = thickness;
-	wall.h = 1200;
-	SDL_RenderFillRect(mRenderer, &wall);
 
 
 	SDL_Rect paddle{
-		static_cast<int>(mPaddlePos.x),
-		static_cast<int>(mPaddlePos.y - paddleH / 2),
+		static_cast<int>(mPaddle1Pos.x),
+		static_cast<int>(mPaddle1Pos.y - paddleH / 2),
 		thickness,
 		static_cast<int>(paddleH)
 	};
 	SDL_RenderFillRect(mRenderer, &paddle);
 
+	paddle.x = static_cast<int>(mPaddle2Pos.x);
+	paddle.y = static_cast<int>(mPaddle2Pos.y - paddleH / 2);
+	SDL_RenderFillRect(mRenderer, &paddle);
 
 	SDL_Rect ball{
-		static_cast<int>(mBallPos.x - thickness / 2),
-		static_cast<int>(mBallPos.y - thickness / 2),
-		thickness,
-		thickness
+			static_cast<int>(1200.0f / 2.0f - thickness / 2),
+			static_cast<int>(700.0f / 2.0f - thickness / 2),
+			thickness,
+			thickness
 	};
-	SDL_RenderFillRect(mRenderer, &ball);
-
+	for (std::vector<sBall>::size_type i = 0; i < Balls.size(); i++) {
+		ball.x = static_cast<int>(Balls[i].Pos.x - static_cast<float>(thickness) / 2);
+		ball.y = static_cast<int>(Balls[i].Pos.y - static_cast<float>(thickness) / 2);
+		SDL_RenderFillRect(mRenderer, &ball);
+	}
 	SDL_RenderPresent(mRenderer);
 }
 

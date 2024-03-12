@@ -2,11 +2,18 @@
 #include "Windows.h"
 #include "SDL/SDL.h"
 #include "Stringapiset.h"
+#include "vector"
 
 struct Vector2
 {
 	float x;
 	float y;
+};
+
+struct sBall
+{
+	Vector2 Pos;
+	Vector2 Vel;
 };
 
 
@@ -37,8 +44,9 @@ private:
 	bool mIsRunning;
 
 
-	int mPaddleDir;
-	Vector2 mPaddlePos;
-	Vector2 mBallPos;
-	Vector2 mBallVel;
+	int mPaddle1Dir;
+	int mPaddle2Dir;
+	Vector2 mPaddle1Pos;
+	Vector2 mPaddle2Pos;
+	std::vector<sBall> Balls;
 };
